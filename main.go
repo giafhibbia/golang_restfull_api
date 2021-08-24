@@ -55,6 +55,7 @@ func handleRequests() {
 	myRouter.HandleFunc("/api/products", getProducts).Methods("GET")
 	myRouter.HandleFunc("/api/products/{id}", getProduct).Methods("GET")
 	myRouter.HandleFunc("/api/products/{id}", updateProduct).Methods("PUT")
+	myRouter.HandleFunc("/api/products/{id}", deleteProduct).Methods("DELETE")
 
 	log.Fatal(http.ListenAndServe(":5000", myRouter))
 }
@@ -141,4 +142,25 @@ func updateProduct(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(result)
+}
+
+func deleteProduct(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	productID := vars["id"]
+
+	var product Product
+	db.First(&product, productID)
+	db.Delete(&product)
+
+	res := Result{Code: 200, Data: product, Message: "Succes delete product"}
+	result, err := json.Marshal(res)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(result)
+
 }
