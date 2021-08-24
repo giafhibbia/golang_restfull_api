@@ -52,6 +52,7 @@ func handleRequests() {
 
 	myRouter.HandleFunc("/", homePage)
 	myRouter.HandleFunc("/api/products", createProduct).Methods("POST")
+	myRouter.HandleFunc("/api/products", getProducts).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":5000", myRouter))
 }
@@ -77,4 +78,21 @@ func createProduct(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(result)
+}
+
+func getProducts(w http.ResponseWriter, r *http.Request) {
+	products := []Product{}
+
+	db.Find(&products)
+
+	res := Result{Code: 200, Data: products, Message: "Succes get data product"}
+	results, err := json.Marshal(res)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(results)
 }
