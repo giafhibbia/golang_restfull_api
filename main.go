@@ -1,0 +1,80 @@
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
+
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/gorilla/mux"
+	"github.com/jinzhu/gorm"
+	"github.com/shopspring/decimal"
+)
+
+var db *gorm.DB
+var err error
+
+// Product is representation of a product
+type Product struct {
+	ID    int             `json:"id"`
+	Code  string          `json:"code"`
+	Name  string          `json:"name"`
+	Price decimal.Decimal `json:"price" sql:"type:decimal(16,2)"`
+}
+
+//Result is an array of product
+type Result struct {
+	Code    int         `json:"code"`
+	Data    interface{} `json:"data"`
+	Message string      `json:"message"`
+}
+
+func main() {
+	db, err = gorm.Open("mysql", "root:@/go_rest_api_crud?charset=utf8&parseTime=True")
+
+	if err != nil {
+		log.Println("Connection failed", err)
+	} else {
+		log.Println("Connection established")
+	}
+
+	db.AutoMigrate(&Product{})
+
+	handleRequests()
+}
+
+func handleRequests() {
+	log.Println("Start the developmment server at http:localhost:5000")
+
+	myRouter := mux.NewRouter().StrictSlash(true)
+
+	myRouter.HandleFunc("/", homePage)
+	myRouter.HandleFunc("/api/products", createProduct).Methods("POST")
+
+	log.Fatal(http.ListenAndServe(":5000", myRouter))
+}
+
+func homePage(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, "Welcome!")
+}
+
+func createProduct(w http.ResponseWriter, r *http.Request) {
+	payloads, _ := ioutil.ReadAll(r.Body)
+	var product Product
+	json.Unmarshal(payloads, &product)
+
+	db.Create(&product)
+
+	res := Result{Code: 200, Data: product, Message: "Succes create product"}
+	result, err := json.Marshal(res)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(result)
+}
