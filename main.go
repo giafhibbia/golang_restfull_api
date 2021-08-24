@@ -150,7 +150,7 @@ func deleteProduct(w http.ResponseWriter, r *http.Request) {
 
 	var product Product
 	db.First(&product, productID)
-	db.Delete(&product)
+	db.Delete(&product, productID)
 
 	res := Result{Code: 200, Data: product, Message: "Succes delete product"}
 	result, err := json.Marshal(res)
